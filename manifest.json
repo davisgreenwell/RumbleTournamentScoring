@@ -1,0 +1,10 @@
+{
+  "name": "Tournament Scoring Mod",
+  "version": "1.0.1",
+  "author": "Davis Greenwell",
+  "description": "Adds text box to log RUMBLE score",
+  "main": "tournamentScoring.dll",
+  "id": "com.davisgreenwell.tournamentScoring",
+  "modDependencies": ["UlvakSkillz-RumbleModdingAPI-1.2.3"],
+  "game": "RUMBLE"
+}
