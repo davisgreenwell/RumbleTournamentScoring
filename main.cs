@@ -1,23 +1,15 @@
-using System;
 using MelonLoader;
+using RumbleModdingAPI;
 using Il2CppRUMBLE.Managers;
 using UnityEngine;
 using Il2CppTMPro;
-using Il2CppPhoton.Pun;
-using RumbleModdingAPI;
-
-
-[assembly: MelonInfo(typeof(tournamentScore.main), "tournamentScoring", "1.0.0", "davisg")]
-[assembly: MelonGame("Buckethead Entertainment", "RUMBLE")]
 
 namespace tournamentScore
 {
     public class main : MelonMod
     {
-        public static main Instance; // for Harmony access
-
-        private int localMatchWins = 0;
-        private int remoteMatchWins = 0;
+        private int localPlayerMatchWins = 0;
+        private int remotePlayerMatchWins = 0;
         private int localRoundsInLosses = 0;
         private int remoteRoundsInLosses = 0;
         private int localRoundWinsThisMatch = 0;
@@ -26,140 +18,96 @@ namespace tournamentScore
         private GameObject scoreboardGO;
         private TextMeshPro scoreboardText;
 
-        private string currentScene = "";
-        private bool scoreboardSpawned = false;
-        private Vector3 pendingPosition;
-        private float spawnTimer = 0f;
         private bool spawnCountdownActive = false;
+        private float spawnTimer = 0f;
+        private Vector3 pendingPosition;
 
-        public static bool IsHost()
+        public override void OnLateInitializeMelon()
         {
-            return PhotonNetwork.IsMasterClient;
-        }
-
-        public override void OnInitializeMelon()
-        {
-            Instance = this;
-            HarmonyInstance.PatchAll(); // hook into game methods
             Calls.onMatchStarted += OnMatchStarted;
             Calls.onRoundEnded += OnRoundEnded;
             Calls.onMatchEnded += OnMatchEnded;
         }
 
-        public override void OnSceneWasLoaded(int buildIndex, string sceneName)
-        {
-            currentScene = sceneName;
-            scoreboardSpawned = false;
-            spawnCountdownActive = false;
-            spawnTimer = 0f;
-
-            MelonLogger.Msg($"[DEBUG] Scene loaded: {sceneName}");
-
-            if (sceneName == "Gym")
-            {
-                MelonLogger.Msg("[DEBUG] Gym loaded. Resetting scores and hiding scoreboard.");
-                ResetScore();
-
-                if (scoreboardGO != null)
-                    scoreboardGO.SetActive(false);
-
-                return;
-            }
-
-            if (sceneName == "Map0" || sceneName == "Map1")
-            {
-                pendingPosition = sceneName == "Map0" ? new Vector3(-10f, 5f, 0f) : new Vector3(12f, 5f, 0f);
-
-                MelonLogger.Msg("[DEBUG] Preparing to spawn scoreboard after delay...");
-                spawnCountdownActive = true;
-            }
-        }
-
         public override void OnUpdate()
         {
+            if (UnityEngine.Input.GetKeyDown(UnityEngine.KeyCode.R))
+            {
+                ResetScore();
+            }
+
             if (spawnCountdownActive)
             {
                 spawnTimer += Time.deltaTime;
-                if (spawnTimer >= 5f && !scoreboardSpawned)
+
+                if (spawnTimer >= 5f && scoreboardGO == null)
                 {
                     SpawnScoreboard();
                 }
             }
 
-            if (scoreboardSpawned && scoreboardGO != null && scoreboardText != null)
+            if (scoreboardGO != null && scoreboardText != null)
             {
-                var cam = Camera.main;
-                if (cam != null)
+                Camera mainCam = Camera.main;
+                if (mainCam != null)
                 {
-                    scoreboardGO.transform.rotation = Quaternion.LookRotation(scoreboardGO.transform.position - cam.transform.position);
+                    scoreboardGO.transform.rotation = Quaternion.LookRotation(scoreboardGO.transform.position - mainCam.transform.position);
                 }
-            }
-
-            if (Input.GetKeyDown(KeyCode.R))
-            {
-                MelonLogger.Msg("[DEBUG] Reset key pressed. Resetting score manually!");
-                ResetScore();
             }
         }
 
-        private void ResetScore()
+        public override void OnSceneWasLoaded(int buildIndex, string sceneName)
         {
-            localMatchWins = 0;
-            remoteMatchWins = 0;
-            localRoundsInLosses = 0;
-            remoteRoundsInLosses = 0;
-
-            UpdateScoreboardText();
-            MelonLogger.Msg("[DEBUG] Scoreboard and tournament scores reset to 0(0)-0(0).");
+            if (sceneName == "Gym")
+            {
+                ResetScore();
+                if (scoreboardGO != null)
+                {
+                    scoreboardGO.SetActive(false);
+                }
+                spawnCountdownActive = false;
+            }
+            else if (sceneName == "Map0" || sceneName == "Map1")
+            {
+                pendingPosition = (sceneName == "Map0") ? new Vector3(-10f, 5f, 0f) : new Vector3(12f, 5f, 0f);
+                spawnTimer = 0f;
+                spawnCountdownActive = true;
+            }
         }
 
         private void SpawnScoreboard()
         {
             if (scoreboardGO == null)
             {
-                scoreboardGO = new GameObject("ScoreboardText");
-                scoreboardText = scoreboardGO.AddComponent<TextMeshPro>();
+                scoreboardGO = Calls.Create.NewText("0(0)-0(0)", 3f, Color.white, Vector3.zero, Quaternion.identity);
 
+                scoreboardText = scoreboardGO?.GetComponent<TextMeshPro>();
                 if (scoreboardText != null)
                 {
                     scoreboardText.alignment = TextAlignmentOptions.Center;
-                    scoreboardText.enableWordWrapping = false;
-                    scoreboardText.fontSize = 3f;
-                    scoreboardText.text = "0(0)-0(0)";
-                    scoreboardText.color = Color.white;
-
-                    scoreboardGO.transform.position = pendingPosition;
-                    scoreboardGO.transform.rotation = Quaternion.identity;
-                    scoreboardGO.transform.localScale = Vector3.one * 5f;
-
-                    MelonLogger.Msg($"[DEBUG] Scoreboard spawned at {scoreboardGO.transform.position}");
                 }
-                else
-                {
-                    MelonLogger.Error("[ERROR] Failed to create scoreboard.");
-                }
+
+                scoreboardGO.transform.position = pendingPosition;
+                scoreboardGO.transform.localScale = Vector3.one * 5f;
+
+                UpdateScoreboardText();
             }
             else
             {
                 scoreboardGO.transform.position = pendingPosition;
-                scoreboardGO.transform.localScale = Vector3.one * 5f;
                 scoreboardGO.SetActive(true);
-
-                MelonLogger.Msg($"[DEBUG] Reusing existing scoreboard. New position: {scoreboardGO.transform.position}");
             }
 
-            scoreboardSpawned = true;
-            UpdateScoreboardText();
+            spawnCountdownActive = false;
         }
 
-        public void OnMatchStarted()
+        private void OnMatchStarted()
         {
-            MelonLogger.Msg("[DEBUG] Match started. Resetting round wins.");
             localRoundWinsThisMatch = 0;
             remoteRoundWinsThisMatch = 0;
         }
 
-        public void OnRoundEnded()
+        private void OnRoundEnded()
         {
             try
             {
@@ -168,71 +116,75 @@ namespace tournamentScore
 
                 if (localPlayer == null || data == null)
                 {
-                    MelonLogger.Warning("[WARNING] Missing local player data. Skipping round tracking.");
                     return;
                 }
 
                 bool localWon = data.HealthPoints > 0;
 
                 if (localWon)
+                {
                     localRoundWinsThisMatch++;
+                }
                 else
+                {
                     remoteRoundWinsThisMatch++;
-
-                MelonLogger.Msg($"[DEBUG] Round ended. LocalRounds: {localRoundWinsThisMatch}, RemoteRounds: {remoteRoundWinsThisMatch}");
+                }
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
-                MelonLogger.Error("[ERROR] Exception in OnRoundEnded: " + e);
+                MelonLogger.Error("Error in OnRoundEnded: " + e);
             }
         }
 
-        public void OnMatchEnded()
+        private void OnMatchEnded()
         {
             try
             {
-                bool isHost = IsHost(); // Replace Calls.Players.IsHost()
-
-                MelonLogger.Msg($"[DEBUG] IsHost() returned: {isHost}");
-
                 bool localWonMatch = localRoundWinsThisMatch > remoteRoundWinsThisMatch;
+                bool localIsHost = Calls.Players.IsHost();
 
                 if (localWonMatch)
                 {
-                    localMatchWins++;
-
-                    if (isHost && remoteRoundWinsThisMatch > 0)
+                    localPlayerMatchWins++;
+                    if (localIsHost)
                     {
-                        remoteRoundsInLosses += 1;
-                        MelonLogger.Msg("[DEBUG] Opponent was client and won rounds. Incrementing opponent parentheses.");
+                        remoteRoundsInLosses += remoteRoundWinsThisMatch;
                     }
                 }
                 else
                 {
-                    remoteMatchWins++;
-
-                    if (!isHost && localRoundWinsThisMatch > 0)
+                    remotePlayerMatchWins++;
+                    if (!localIsHost)
                     {
-                        localRoundsInLosses += 1;
-                        MelonLogger.Msg("[DEBUG] Local was client and won rounds. Incrementing local parentheses.");
+                        localRoundsInLosses += localRoundWinsThisMatch;
                     }
                 }
 
-                MelonLogger.Msg($"[DEBUG] Match ended. Score: {localMatchWins}({localRoundsInLosses})-{remoteMatchWins}({remoteRoundsInLosses})");
                 UpdateScoreboardText();
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
-                MelonLogger.Error("[ERROR] Exception in OnMatchEnded: " + e);
+                MelonLogger.Error("Error in OnMatchEnded: " + e);
             }
         }
 
         private void UpdateScoreboardText()
         {
-            string text = $"{localMatchWins}({localRoundsInLosses})-{remoteMatchWins}({remoteRoundsInLosses})";
-
             if (scoreboardText != null)
-                scoreboardText.text = text;
+            {
+                scoreboardText.text = $"{localPlayerMatchWins}({localRoundsInLosses})-{remotePlayerMatchWins}({remoteRoundsInLosses})";
+            }
+        }
+
+        private void ResetScore()
+        {
+            localPlayerMatchWins = 0;
+            remotePlayerMatchWins = 0;
+            localRoundsInLosses = 0;
+            remoteRoundsInLosses = 0;
+            localRoundWinsThisMatch = 0;
+            remoteRoundWinsThisMatch = 0;
+            UpdateScoreboardText();
         }
     }
 }

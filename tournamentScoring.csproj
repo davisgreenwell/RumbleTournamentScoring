@@ -1,9 +1,9 @@
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <TargetFramework>net6.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <OutputType>Library</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,35 +13,23 @@
     <Reference Include="RumbleModdingAPI">
       <HintPath>libs\RumbleModdingAPI.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>libs\UnityEngine.InputLegacyModule.dll</HintPath>
+    </Reference>
     <Reference Include="Assembly-CSharp">
       <HintPath>libs\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="Il2CppRUMBLE.Runtime">
       <HintPath>libs\Il2CppRUMBLE.Runtime.dll</HintPath>
     </Reference>
-    <Reference Include="Il2CppPhotonRealtime">
-      <HintPath>libs\Il2CppPhotonRealtime.dll</HintPath>
-    </Reference>
-    <Reference Include="Il2CppPhotonUnityNetworking">
-      <HintPath>libs\Il2CppPhotonUnityNetworking.dll</HintPath>
-    </Reference>
-    <Reference Include="0Harmony">
-      <HintPath>libs\0Harmony.dll</HintPath>
-    </Reference>
     <Reference Include="UnityEngine">
       <HintPath>libs\UnityEngine.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UI">
-      <HintPath>$(UnityManagedFolder)\UnityEngine.UI.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>libs\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.TextRenderingModule">
       <HintPath>libs\UnityEngine.TextRenderingModule.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.TextMeshPro">
-      <HintPath>libs\Unity.TextMeshPro.dll</HintPath>
     </Reference>
     <Reference Include="Il2Cppmscorlib">
       <HintPath>libs\Il2Cppmscorlib.dll</HintPath>
@@ -52,17 +40,13 @@
     <Reference Include="Il2CppBucketheadEntertainment.Plugins">
       <HintPath>libs\Il2CppBucketheadEntertainment.Plugins.dll</HintPath>
     </Reference>
-    <Reference Include="Unity.InputSystem">
-      <HintPath>libs\Unity.InputSystem.dll</HintPath>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>libs\Unity.TextMeshPro.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine.InputLegacyModule">
-      <HintPath>libs\UnityEngine.InputLegacyModule.dll</HintPath>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>libs\UnityEngine.UI.dll</HintPath>
     </Reference>
+
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Include="main.cs" />
-  </ItemGroup>
-
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
